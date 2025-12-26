@@ -1,1 +1,1 @@
-# SGI_APP
+# SGI_ApplicationMobile
