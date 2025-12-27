@@ -8,7 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "API_BASE_URL": "https://sgi-backend-ok03.onrender.com"
+        "API_BASE_URL": "https://sgi-back-35cv.onrender.com"
       }
     },
     "preview": {
@@ -17,7 +17,7 @@
         "buildType": "apk"
       },
       "env": {
-        "API_BASE_URL": "https://sgi-backend-ok03.onrender.com"
+        "API_BASE_URL": "https://sgi-back-35cv.onrender.com"
       }
     },
     "production": {
@@ -26,7 +26,7 @@
         "buildType": "apk"
       },
       "env": {
-        "API_BASE_URL": "https://sgi-backend-ok03.onrender.com"
+        "API_BASE_URL": "https://sgi-back-35cv.onrender.com"
       }
     }
   },

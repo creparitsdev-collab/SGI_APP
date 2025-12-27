@@ -16,7 +16,7 @@ import { API_BASE_URL as ENV_API_BASE_URL } from '@env'
 // Obtener la URL de la API con fallback
 // react-native-dotenv reemplazará @env en tiempo de compilación
 // Si no está disponible, usar el valor por defecto de producción
-const API_BASE_URL = (ENV_API_BASE_URL || 'https://sgi-backend-ok03.onrender.com')
+const API_BASE_URL = (ENV_API_BASE_URL || 'https://sgi-back-35cv.onrender.com')
     .toString()
     .trim()
     .replace(/\/$/, '')
