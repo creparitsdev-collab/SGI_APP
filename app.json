@@ -1,61 +1,61 @@
 {
-    "expo": {
-        "name": "SGI_ApplicationMobile",
-        "slug": "SGI_ApplicationMobile",
-        "version": "1.0.0",
-        "orientation": "portrait",
-        "icon": "./assets/icon.png",
-        "userInterfaceStyle": "automatic",
-        "newArchEnabled": true,
-        "splash": {
-            "image": "./assets/splash-icon.png",
-            "resizeMode": "contain",
-            "backgroundColor": "#ffffff"
-        },
-        "ios": {
-            "supportsTablet": true,
-            "infoPlist": {
-                "NSPhotoLibraryAddUsageDescription": "Permitir guardar códigos QR en la galería.",
-                "NSPhotoLibraryUsageDescription": "Permitir acceder a la galería para guardar códigos QR."
-            }
-        },
-        "android": {
-            "adaptiveIcon": {
-                "foregroundImage": "./assets/adaptive-icon.png",
-                "backgroundColor": "#ffffff"
-            },
-            "edgeToEdgeEnabled": true,
-            "package": "com.anonymous.TestFrontend",
-            "permissions": [
-                "android.permission.READ_EXTERNAL_STORAGE",
-                "android.permission.WRITE_EXTERNAL_STORAGE",
-                "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
-                "android.permission.ACCESS_MEDIA_LOCATION",
-                "android.permission.READ_MEDIA_IMAGES",
-                "android.permission.READ_MEDIA_VIDEO",
-                "android.permission.READ_MEDIA_AUDIO"
-            ]
-        },
-        "web": {
-            "favicon": "./assets/favicon.png",
-            "bundler": "metro"
-        },
-        "plugins": [
-            "expo-font",
-            [
-                "expo-media-library",
-                {
-                    "photosPermission": "Permite a la app acceder a tus fotos para guardar el código QR.",
-                    "savePhotosPermission": "Permite a la app guardar el código QR en tu galería.",
-                    "isAccessMediaLocationEnabled": true
-                }
-            ]
-        ],
-        "extra": {
-            "eas": {
-                "projectId": "b4505440-f670-47b5-bbaa-e7cf59387592"
-            }
-        },
-        "owner": "antonio7dev"
+  "expo": {
+    "name": "SGI_ApplicationMobile",
+    "slug": "SGI_ApplicationMobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryAddUsageDescription": "Permitir guardar códigos QR en la galería.",
+        "NSPhotoLibraryUsageDescription": "Permitir acceder a la galería para guardar códigos QR."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.TestFrontend",
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.ACCESS_MEDIA_LOCATION",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Permite a la app acceder a tus fotos para guardar el código QR.",
+          "savePhotosPermission": "Permite a la app guardar el código QR en tu galería.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
+    ],
+    "owner": "creparis",
+    "extra": {
+      "eas": {
+        "projectId": "785c8595-f364-4b2d-ad83-b5ed965ce060"
+      }
     }
+  }
 }
