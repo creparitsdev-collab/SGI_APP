@@ -20,6 +20,31 @@ export const getProducts = async (page = 0, size = 100, stockCatalogueId = null,
     }
 }
 
+export const createProductDiscount = async (productId, discountData) => {
+    try {
+        const response = await api.post(`/api/products/${productId}/discounts`, discountData)
+
+        if (response.status >= 200 && response.status < 300) {
+            return response.data
+        }
+
+        throw new Error(`Código de estado inesperado: ${response.status}`)
+    } catch (error) {
+        console.error('[createProductDiscount] Error:', error)
+        throw error
+    }
+}
+
+export const getProductDiscounts = async (productId) => {
+    try {
+        const response = await api.get(`/api/products/${productId}/discounts`)
+        return response.data
+    } catch (error) {
+        console.error('[getProductDiscounts] Error:', error)
+        throw error
+    }
+}
+
 // Crear un nuevo producto
 export const createProduct = async (productData) => {
     try {

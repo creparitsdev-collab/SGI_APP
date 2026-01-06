@@ -18,7 +18,17 @@ import * as MediaLibrary from 'expo-media-library'
 import * as Sharing from 'expo-sharing'
 
 // Servicios
-import { getProducts, createProduct, updateProduct, getStockCatalogues, getProductStatuses, getQrCodeImage, getProductByQrHash } from '../../services/product'
+import {
+    getProducts,
+    createProduct,
+    updateProduct,
+    getStockCatalogues,
+    getProductStatuses,
+    getQrCodeImage,
+    getProductByQrHash,
+    createProductDiscount,
+    getProductDiscounts,
+} from '../../services/product'
 import { getUnitsOfMeasurement } from '../../services/unitOfMeasurement'
 import { getWarehouseTypes } from '../../services/warehouseType'
 import { useAuth } from '../../contexts/AuthContext'
@@ -408,7 +418,225 @@ const ViewQrModalContent = ({ modalRef, product, alertRef }) => {
     )
 }
 
-// Continuará en el siguiente mensaje con CreateProductModal...
+const ProductDiscountModalContent = ({ modalRef, product, alertRef, onDiscountApplied }) => {
+    const { colors } = useTheme()
+    const [discountAmount, setDiscountAmount] = useState('')
+    const [discountDescription, setDiscountDescription] = useState('')
+    const [amountErrors, setAmountErrors] = useState([])
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
+    const [discountLogs, setDiscountLogs] = useState([])
+
+    const runValidators = (value, fns) => fns.map((fn) => fn(value)).filter(Boolean)
+
+    useEffect(() => {
+        if (!product?.id) return
+
+        const fetchHistory = async () => {
+            try {
+                setIsLoadingHistory(true)
+                const response = await getProductDiscounts(product.id)
+                const logs = response?.type === 'SUCCESS' && Array.isArray(response?.data) ? response.data : []
+                setDiscountLogs(logs)
+            } catch (error) {
+                console.error('[getProductDiscounts] Error:', error)
+                setDiscountLogs([])
+            } finally {
+                setIsLoadingHistory(false)
+            }
+        }
+
+        fetchHistory()
+    }, [product?.id])
+
+    const onClose = () => {
+        modalRef.current?.close()
+        setDiscountAmount('')
+        setDiscountDescription('')
+        setAmountErrors([])
+    }
+
+    const validateAmount = (value) => {
+        const errs = runValidators(value, [required, validPositiveNumber])
+        setAmountErrors(errs)
+        return errs
+    }
+
+    const handleApplyDiscount = async () => {
+        if (!product?.id) return
+
+        const errs = validateAmount(discountAmount)
+        if (errs.length > 0) {
+            alertRef.current?.show('Atención', 'Ingrese una cantidad de descuento válida.', 'warning')
+            return
+        }
+
+        const currentQty = Number(product.cantidadTotal || 0)
+        const amount = Number(discountAmount)
+        if (!Number.isFinite(currentQty) || currentQty < 0) {
+            alertRef.current?.show('Atención', 'La cantidad total actual no es válida.', 'warning')
+            return
+        }
+
+        if (amount > currentQty) {
+            alertRef.current?.show('Atención', 'El descuento no puede ser mayor que la cantidad total.', 'warning')
+            return
+        }
+
+        try {
+            setIsSaving(true)
+            const response = await createProductDiscount(product.id, {
+                amount: parseInt(discountAmount, 10),
+                description: discountDescription?.trim() || null,
+            })
+
+            const success = response?.type === 'SUCCESS'
+            const updatedCantidadTotal = response?.data?.cantidadTotal
+            const savedDiscount = response?.data?.discount
+
+            if (!success) {
+                alertRef.current?.show('Error', response?.message || 'No se pudo aplicar el descuento', 'error')
+                return
+            }
+
+            if (savedDiscount) {
+                setDiscountLogs((prev) => [savedDiscount, ...(prev || [])])
+            }
+
+            alertRef.current?.show(
+                'Éxito',
+                `Se aplicó el descuento. Cantidad actualizada a ${updatedCantidadTotal ?? currentQty - amount}.`,
+                'success',
+            )
+
+            onClose()
+            if (onDiscountApplied) onDiscountApplied(product.id, updatedCantidadTotal)
+        } catch (error) {
+            console.error('[createProductDiscount] Error:', error)
+            alertRef.current?.show('Error', error.response?.data?.message || 'No se pudo aplicar el descuento', 'error')
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    return (
+        <Modalize ref={modalRef} {...MODAL_ANIMATION_PROPS} modalStyle={{ backgroundColor: colors.background }}>
+            <View style={{ maxHeight: MODAL_MAX_HEIGHT }}>
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={{ paddingHorizontal: '6%', paddingTop: '9%', paddingBottom: '6%' }}
+                >
+                    {product ? (
+                        <>
+                            <View className="flex gap-0 mb-8">
+                                <View className="flex flex-row justify-between items-center">
+                                    <Text className="text-foreground text-2xl font-medium">Descuento (%)</Text>
+                                    <Button isIconOnly className="bg-transparent shrink-0" onPress={onClose}>
+                                        <Ionicons name="close-outline" size={24} color={colors.foreground} />
+                                    </Button>
+                                </View>
+                                <Text className="text-muted-foreground">Registrar descuento y ver historial</Text>
+                            </View>
+
+                            <View className="gap-4">
+                                <View className="gap-2">
+                                    <InfoRow label="Producto" value={product.nombre || 'N/A'} />
+                                    <InfoRow label="Lote" value={product.lote || 'N/A'} />
+                                    <InfoRow label="Cantidad" value={product.cantidadTotal != null ? String(product.cantidadTotal) : '0'} />
+                                </View>
+
+                                <TextField>
+                                    <TextField.Label className="text-foreground font-medium">Cantidad a descontar</TextField.Label>
+                                    <TextField.Input
+                                        colors={{
+                                            blurBackground: colors.accentSoft,
+                                            focusBackground: colors.surface2,
+                                            blurBorder: colors.accentSoft,
+                                            focusBorder: colors.surface2,
+                                        }}
+                                        placeholder="0"
+                                        keyboardType="numeric"
+                                        cursorColor={colors.accent}
+                                        selectionHandleColor={colors.accent}
+                                        selectionColor={Platform.OS === 'ios' ? colors.accent : colors.muted}
+                                        value={discountAmount}
+                                        onChangeText={(val) => {
+                                            setDiscountAmount(val)
+                                            validateAmount(val)
+                                        }}
+                                    />
+                                    {amountErrors.length > 0 ? <TextField.ErrorMessage>{amountErrors.join('\n')}</TextField.ErrorMessage> : undefined}
+                                </TextField>
+
+                                <TextField>
+                                    <TextField.Label className="text-foreground font-medium">Descripción (opcional)</TextField.Label>
+                                    <TextField.Input
+                                        colors={{
+                                            blurBackground: colors.accentSoft,
+                                            focusBackground: colors.surface2,
+                                            blurBorder: colors.accentSoft,
+                                            focusBorder: colors.surface2,
+                                        }}
+                                        placeholder="Motivo del descuento..."
+                                        cursorColor={colors.accent}
+                                        selectionHandleColor={colors.accent}
+                                        selectionColor={Platform.OS === 'ios' ? colors.accent : colors.muted}
+                                        value={discountDescription}
+                                        onChangeText={setDiscountDescription}
+                                    />
+                                </TextField>
+
+                                <Button className="w-full bg-accent" onPress={handleApplyDiscount} isDisabled={isSaving || isLoadingHistory}>
+                                    {isSaving ? (
+                                        <>
+                                            <Spinner color={colors.accentForeground} size="sm" />
+                                            <Button.Label>Guardando...</Button.Label>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Button.Label>Aplicar descuento</Button.Label>
+                                        </>
+                                    )}
+                                </Button>
+
+                                <View className="mt-4">
+                                    <Text className="text-foreground font-medium text-lg">Historial</Text>
+                                    <Text className="text-muted-foreground text-xs">Últimos descuentos registrados</Text>
+                                </View>
+
+                                {isLoadingHistory ? (
+                                    <View className="py-6 items-center">
+                                        <Spinner color={colors.accent} size="md" />
+                                    </View>
+                                ) : discountLogs.length > 0 ? (
+                                    <View className="gap-2 mt-2">
+                                        {discountLogs.map((log) => (
+                                            <View key={log.id} className="bg-surface-1 border border-border/20 rounded-lg p-3 gap-1">
+                                                <Text className="text-foreground font-medium">-{log.amount} ( {log.quantityBefore} → {log.quantityAfter} )</Text>
+                                                {log.description ? <Text className="text-muted-foreground">{log.description}</Text> : null}
+                                                <Text className="text-muted-foreground text-xs">
+                                                    {log.createdByUserName || log.createdByUserEmail || 'N/A'} · {formatDateLiteral(log.createdAt, true)}
+                                                </Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                ) : (
+                                    <View className="py-4">
+                                        <Text className="text-muted-foreground">Sin descuentos registrados.</Text>
+                                    </View>
+                                )}
+                            </View>
+                        </>
+                    ) : (
+                        <View className="h-20" />
+                    )}
+                </ScrollView>
+            </View>
+        </Modalize>
+    )
+}
+
 // =====================================================================
 // MODAL DE CREACIÓN DE PRODUCTO
 // =====================================================================
@@ -422,8 +650,8 @@ const CreateProductModalContent = ({ modalRef, onProductCreated, isLoading, aler
     const [isSaving, setIsSaving] = useState(false)
     const [showDatePickerIngreso, setShowDatePickerIngreso] = useState(false)
     const [showDatePickerCaducidad, setShowDatePickerCaducidad] = useState(false)
-    const [showDatePickerReanalisis, setShowDatePickerReanalisis] = useState(false)
     const [showDatePickerMuestreo, setShowDatePickerMuestreo] = useState(false)
+    const [showDatePickerReanalisis, setShowDatePickerReanalisis] = useState(false)
 
     // Inicializar fechas con fecha actual
     const getTodayDateString = () => {
@@ -1020,7 +1248,6 @@ const CreateProductModalContent = ({ modalRef, onProductCreated, isLoading, aler
                                     />
                                 )}
                             </TextField>
-
                             <TextField isInvalid={productErrors.fechaMuestreo.length > 0}>
                                 <TextField.Label className="text-foreground font-medium mb-2">Fecha de muestreo</TextField.Label>
                                 <Pressable onPress={() => setShowDatePickerMuestreo(true)}>
@@ -2798,6 +3025,7 @@ const ProductsScreen = () => {
     const filterModalRef = useRef(null)
     const createModalRef = useRef(null)
     const editModalRef = useRef(null)
+    const discountModalRef = useRef(null)
     const viewQrModalRef = useRef(null)
     const qrScannerModalRef = useRef(null)
     const productDetailsModalRef = useRef(null)
@@ -2805,6 +3033,7 @@ const ProductsScreen = () => {
 
     const [productToViewQr, setProductToViewQr] = useState(null)
     const [productToEdit, setProductToEdit] = useState(null)
+    const [productToDiscount, setProductToDiscount] = useState(null)
     const [scannedProduct, setScannedProduct] = useState(null)
 
     // Handlers para abrir modales
@@ -2818,6 +3047,13 @@ const ProductsScreen = () => {
         setProductToViewQr(product)
         setTimeout(() => {
             viewQrModalRef.current?.open()
+        }, 0)
+    }
+
+    const openDiscountModal = (product) => {
+        setProductToDiscount(product)
+        setTimeout(() => {
+            discountModalRef.current?.open()
         }, 0)
     }
 
@@ -3093,6 +3329,16 @@ const ProductsScreen = () => {
                                                                     </TouchableOpacity>
                                                                 )}
 
+                                                                {isAdmin && (
+                                                                    <TouchableOpacity
+                                                                        onPress={() => openDiscountModal(item)}
+                                                                        className="w-12 h-12 flex items-center justify-center rounded-full"
+                                                                        activeOpacity={0.6}
+                                                                    >
+                                                                        <Text className="text-accent text-[18px] font-extrabold">%</Text>
+                                                                    </TouchableOpacity>
+                                                                )}
+
                                                                 {/* Indicador también ajustado al área de toque */}
                                                                 <View className="w-12 h-12 flex items-center justify-center">
                                                                     <Accordion.Indicator
@@ -3235,6 +3481,14 @@ const ProductsScreen = () => {
                 statuses={statuses}
                 unitsOfMeasurement={unitsOfMeasurement}
                 warehouseTypes={warehouseTypes}
+            />
+            <ProductDiscountModalContent
+                modalRef={discountModalRef}
+                product={productToDiscount}
+                alertRef={alertRef}
+                onDiscountApplied={() => {
+                    fetchData()
+                }}
             />
             <QrScannerModalContent modalRef={qrScannerModalRef} onScanSuccess={handleScanSuccess} alertRef={alertRef} />
             <ProductDetailsModalContent
